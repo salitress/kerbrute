@@ -43,8 +43,7 @@ Encryption Types:
     aes128-cts-hmac-sha256-128
     aes256-cts-hmac-sha384-192`)
 	rootCmd.PersistentFlags().BoolVar(&linux, "linux", false, "Indicate the target KDC as Linux and treat the realm as case-sensitive instead of forcing upper case")
-
-	if delay != 0 {
-		threads = 1
-	}
+	rootCmd.PersistentFlags().IntVar(&jitter, "jitter", 0, "Jitter percentage (0-100) applied to --delay, to avoid a perfectly periodic request pattern. Requires --delay")
+	rootCmd.PersistentFlags().IntVar(&lockoutThreshold, "lockout-threshold", 0, "Max attempts per username in this run before skipping it (0 = disabled). Set to the domain's real bad-password-count lockout policy minus a safety margin")
+	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit results as newline-delimited JSON on stdout; human-readable logs go to stderr")
 }

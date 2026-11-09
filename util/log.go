@@ -10,7 +10,7 @@ type Logger struct {
 	Log *logging.Logger
 }
 
-func NewLogger(verbose bool, logFileName string) Logger {
+func NewLogger(verbose bool, logFileName string, jsonMode bool) Logger {
 	log := logging.MustGetLogger("kerbrute")
 	format := logging.MustStringFormatter(
 		"\r" + `%{color}%{time:2006/01/02 15:04:05} >  %{message}%{color:reset}`,
@@ -18,7 +18,13 @@ func NewLogger(verbose bool, logFileName string) Logger {
 	formatNoColor := logging.MustStringFormatter(
 		"\r" + `%{time:2006/01/02 15:04:05} >  %{message}`,
 	)
-	backend := logging.NewLogBackend(os.Stdout, "", 0)
+	// In --json mode, stdout is reserved for the NDJSON result stream, so
+	// human-readable chatter (progress, info, errors) goes to stderr instead.
+	logDest := os.Stdout
+	if jsonMode {
+		logDest = os.Stderr
+	}
+	backend := logging.NewLogBackend(logDest, "", 0)
 	backendFormatter := logging.NewBackendFormatter(backend, format)
 
 	if logFileName != "" {

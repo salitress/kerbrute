@@ -35,13 +35,15 @@ func (k KerbruteSession) HandleKerbError(err error) (bool, string) {
 		}
 		return true, "USER LOCKED OUT"
 	}
-	if strings.Contains(eString, " AS_REP is not valid or client password/keytab incorrect") {
-		return true, "Got AS-REP (no pre-auth) but couldn't decrypt - bad password"
-	}
 	if strings.Contains(eString, "KRB_AP_ERR_SKEW Clock skew too great") {
 		return true, "Clock skew too great"
 	}
-	// KDC_ERR_ETYPE_NOSUPP
+	if strings.Contains(eString, "KDC_ERR_ETYPE_NOSUPP") {
+		// This account doesn't support the encryption type we offered (e.g. a
+		// legacy/downlevel-trust account with restricted msDS-SupportedEncryptionTypes).
+		// That's a per-account quirk, not a reason to abort the whole run.
+		return true, "KDC doesn't support the requested encryption type for this account"
+	}
 
 	return false, eString
 }

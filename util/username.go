@@ -11,6 +11,10 @@ import (
 )
 
 func FormatUsername(username string) (user string, err error) {
+	// Wordlists copied from Windows carry a trailing \r that bufio.Scanner's
+	// default \n split leaves in place, silently turning every username into
+	// a nonexistent one; strip surrounding whitespace defensively.
+	username = strings.TrimSpace(username)
 	if username == "" {
 		return "", errors.New("Bad username: blank")
 	}
@@ -22,6 +26,7 @@ func FormatUsername(username string) (user string, err error) {
 }
 
 func FormatComboLine(combo string) (username string, password string, err error) {
+	combo = strings.TrimRight(combo, "\r\n")
 	parts := strings.SplitN(combo, ":", 2)
 	if len(parts) == 0 {
 		err = errors.New("Bad format - missing ':'")

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"github.com/0xZDH/kerbrute/util"
 )
 
 func makeSprayWorker(ctx context.Context, usernames <-chan string, wg *sync.WaitGroup, password string, userAsPass bool) {
@@ -72,6 +74,11 @@ func makeBruteComboWorker(ctx context.Context, combos <-chan [2]string, wg *sync
 }
 
 func testLogin(ctx context.Context, username string, password string) {
+	if attemptsExceeded(username) {
+		logger.Log.Debugf("[!] Skipping %v@%v - reached --lockout-threshold for this run", username, domain)
+		return
+	}
+
 	kSession.ProgressBar.Add(1)
 
 	atomic.AddInt32(&counter, 1)
@@ -80,8 +87,14 @@ func testLogin(ctx context.Context, username string, password string) {
 		atomic.AddInt32(&successes, 1)
 		if err != nil { // it's a valid login, but there's an error we should display
 			logger.Log.Noticef("[+] VALID LOGIN WITH ERROR:\t %s\t (%s)", login, err)
+			if jsonOutput {
+				util.EmitJSON("login", username, domain, err.Error(), "")
+			}
 		} else {
 			logger.Log.Noticef("[+] VALID LOGIN:\t %s", login)
+			if jsonOutput {
+				util.EmitJSON("login", username, domain, "", "")
+			}
 		}
 		if stopOnSuccess {
 			cancel()
@@ -115,8 +128,14 @@ func testUsername(ctx context.Context, username string) {
 		atomic.AddInt32(&successes, 1)
 		if err != nil {
 			logger.Log.Noticef("[+] VALID USERNAME WITH ERROR:\t %s\t (%s)", username, err)
+			if jsonOutput {
+				util.EmitJSON("username", username, domain, err.Error(), "")
+			}
 		} else {
 			logger.Log.Noticef("[+] VALID USERNAME:\t %s", usernamefull)
+			if jsonOutput {
+				util.EmitJSON("username", username, domain, salt, "")
+			}
 		}
 
 	} else if err != nil {

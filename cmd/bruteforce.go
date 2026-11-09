@@ -72,7 +72,7 @@ Scan:
 				logger.Log.Debug("[!] Skipping: %q - %v", comboline, err.Error())
 				continue
 			}
-			time.Sleep(time.Duration(delay) * time.Millisecond)
+			sleepDelay()
 			combosChan <- [2]string{username, password}
 		}
 	}

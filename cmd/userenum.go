@@ -66,7 +66,7 @@ Scan:
 				logger.Log.Debugf("[!] %q - %v", usernameline, err.Error())
 				continue
 			}
-			time.Sleep(time.Duration(delay) * time.Millisecond)
+			sleepDelay()
 			usersChan <- username
 		}
 	}

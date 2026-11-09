@@ -3,6 +3,7 @@ package cmd
 import (
 	"bufio"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -71,8 +72,8 @@ Scan:
 		case <-ctx.Done():
 			break Scan
 		default:
-			password = scanner.Text()
-			time.Sleep(time.Duration(delay) * time.Millisecond)
+			password = strings.TrimRight(scanner.Text(), "\r\n")
+			sleepDelay()
 			passwordsChan <- password
 		}
 	}
