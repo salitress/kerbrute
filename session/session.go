@@ -2,7 +2,7 @@ package session
 
 import (
 	"fmt"
-	"github.com/0xZDH/kerbrute/util"
+	"github.com/salitress/kerbrute/util"
 	"html/template"
 	"os"
 	"strings"

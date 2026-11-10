@@ -1,4 +1,4 @@
-module github.com/0xZDH/kerbrute
+module github.com/salitress/kerbrute
 
 go 1.18
 

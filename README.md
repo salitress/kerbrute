@@ -1,8 +1,8 @@
 # Kerbrute
 
-> This is a modified version of [ropnop's Kerbrute](https://github.com/ropnop/kerbrute).
+> This is a further modified version of [0xZDH's Kerbrute](https://github.com/0xZDH/kerbrute), itself a modified version of [ropnop's Kerbrute](https://github.com/ropnop/kerbrute).
 
-This repository currently contains the following updates/modifications:
+This repository currently contains the following updates/modifications (from 0xZDH's fork):
 - Support tunneling TCP connections through a SOCKS proxy via `--socks <ip:port>`
 - Support NT hash authentication via `--hash|-H`
   - This flag enables hash authentication and hashes should replace passwords in the command line arguments (e.g. `./kerbrute_linux_amd64 passwordspray -d lab.ropnop.com -H domain_users.txt <HASH>`)
@@ -21,6 +21,21 @@ When performing Kerberos authentication using passwords, the realm and username 
 To account for this, during user enumeration, if the username returned in the supported encryption salt differs from the attempted username - Kerbrute will output the Active Directory username wrapped in parenthesis. This value should be used in place of the original username when attempting to authenticate via password spraying, brute forcing, etc.
 
 Also, in some cases when authenticating against a Linux KDC, the realm server-side is not stored in all upper case characters. Therefor, the flag `--linux` has been added that will treat the domain as is when setting the realm instead of forcing to upper case characters.
+
+### Further modifications (this fork, @salitress)
+
+This fork went through a full code review on top of 0xZDH's version. Bugs found and fixed:
+- `--delay` did not actually force single-threaded operation. The check lived in `init()`, which runs before cobra parses the command-line flags, so it silently never triggered — up to `--threads` (10 by default) requests could still fire concurrently even with `--delay` set, defeating its purpose as a throttling/safety option.
+- `-o/--output <file>` was silently broken: an unexported `logger` field on `KerbruteSessionOptions` meant it could never be set from the `cmd` package, so `NewKerbruteSession` always built a second, file-less logger that clobbered the one configured with `-o`. Log output never reached the file.
+- Wordlists saved on Windows (CRLF line endings) silently turned every username and password into a nonexistent one, since the trailing `\r` was never trimmed.
+- A KDC response of `KDC_ERR_ETYPE_NOSUPP` (the account doesn't support the offered encryption type) aborted the entire run instead of just skipping that one account.
+- A duplicate, unreachable error-string check in `errors.go` was removed.
+- Fixed the internal Go module path (it still declared `github.com/0xZDH/kerbrute`), which made `go install github.com/salitress/kerbrute@latest` fail outright with a module-path-mismatch error.
+
+New features:
+- `--jitter <0-100>`: randomises `--delay` by the given percentage so requests don't land at a perfectly periodic interval (a dead giveaway in SIEM timing analysis). Requires `--delay`.
+- `--lockout-threshold <N>`: tracks attempts per username for the run and stops trying an account after `N-1` attempts (a safety margin below the domain's real lockout threshold), instead of blindly grinding through an entire wordlist. `bruteuser` also stops the whole run early once its single target hits the limit, rather than continuing to sleep `--delay` through the rest of a potentially huge wordlist for nothing.
+- `--json`: emits results (valid logins, valid usernames, captured AS-REP hashes) as newline-delimited JSON on stdout, with all human-readable logging routed to stderr instead — built for piping into `jq` or another tool rather than scraping colored log lines.
 
 ---
 
@@ -63,7 +78,7 @@ $ ./kerbrute -h
  / ,< /  __/ /  / /_/ / /  / /_/ / /_/  __/
 /_/|_|\___/_/  /_.___/_/   \__,_/\__/\___/
 
-Version: dev (c1474ac) - 08/19/24 - Ronnie Flathers @ropnop (Modified by ZedH @0xZDH)
+Version: dev (n/a) - 11/10/26 - Ronnie Flathers @ropnop (Modified by ZedH @0xZDH, further modified by @salitress)
 
 This tool is designed to assist in quickly bruteforcing valid Active Directory accounts through Kerberos Pre-Authentication.
 It is designed to be used on an internal Windows domain with access to one of the Domain Controllers.
@@ -75,33 +90,37 @@ Usage:
 Available Commands:
   bruteforce    Bruteforce username:password combos, from a file or stdin
   bruteuser     Bruteforce a single user's password from a wordlist
+  completion    Generate the autocompletion script for the specified shell
   help          Help about any command
   passwordspray Test a single password against a list of users
   userenum      Enumerate valid domain usernames via Kerberos
   version       Display version info and quit
 
 Flags:
-      --dc string          The location of the Domain Controller (KDC) to target. If blank, will lookup via DNS
-      --delay int          Delay in millisecond between each attempt. Will always use single thread if set
-  -d, --domain string      The full domain to use (e.g. contoso.com)
-      --downgrade          Force downgraded encryption type (arcfour-hmac-md5)
-      --etype string       Kerberos password authentication encryption type (default: aes128-cts-hmac-sha1-96)
-                           Encryption Types:
-                               rc4-hmac
-                               des3-cbc-sha1-kd
-                               aes128-cts-hmac-sha1-96
-                               aes256-cts-hmac-sha1-96
-                               aes128-cts-hmac-sha256-128
-                               aes256-cts-hmac-sha384-192
-  -H, --hash               Indicate the use of NT hash(es) [rc4-hmac] instead of password(s) for authentication
-      --hash-file string   File to save AS-REP hashes to (if any captured), otherwise just logged
-  -h, --help               help for kerbrute
-      --linux              Indicate the target KDC as Linux and treat the realm as case-sensitive instead of forcing upper case
-  -o, --output string      File to write logs to. Optional.
-      --safe               Safe mode. Will abort if any user comes back as locked out. Default: FALSE
-      --socks string       SOCKS5 proxy address and port for upstream proxying (e.g. 127.0.0.1:1080)
-  -t, --threads int        Threads to use (default 10)
-  -v, --verbose            Log failures and errors
+      --dc string               The location of the Domain Controller (KDC) to target. If blank, will lookup via DNS
+      --delay int               Delay in millisecond between each attempt. Will always use single thread if set
+  -d, --domain string           The full domain to use (e.g. contoso.com)
+      --downgrade               Force downgraded encryption type (arcfour-hmac-md5)
+      --etype string            Kerberos password authentication encryption type (default: aes128-cts-hmac-sha1-96)
+                                Encryption Types:
+                                    rc4-hmac
+                                    des3-cbc-sha1-kd
+                                    aes128-cts-hmac-sha1-96
+                                    aes256-cts-hmac-sha1-96
+                                    aes128-cts-hmac-sha256-128
+                                    aes256-cts-hmac-sha384-192
+  -H, --hash                    Indicate the use of NT hash(es) [rc4-hmac] instead of password(s) for authentication
+      --hash-file string        File to save AS-REP hashes to (if any captured), otherwise just logged
+  -h, --help                    help for kerbrute
+      --jitter int              Jitter percentage (0-100) applied to --delay, to avoid a perfectly periodic request pattern. Requires --delay
+      --json                    Emit results as newline-delimited JSON on stdout; human-readable logs go to stderr
+      --linux                   Indicate the target KDC as Linux and treat the realm as case-sensitive instead of forcing upper case
+      --lockout-threshold int   Max attempts per username in this run before skipping it (0 = disabled). Set to the domain's real bad-password-count lockout policy minus a safety margin
+  -o, --output string           File to write logs to. Optional.
+      --safe                    Safe mode. Will abort if any user comes back as locked out. Default: FALSE
+      --socks string            SOCKS5 proxy address and port for upstream proxying (e.g. 127.0.0.1:1080)
+  -t, --threads int             Threads to use (default 10)
+  -v, --verbose                 Log failures and errors
 
 Use "kerbrute [command] --help" for more information about a command.
 ```
@@ -192,10 +211,10 @@ Version: dev (c1474ac) - 08/19/24 - Ronnie Flathers @ropnop (Modified by ZedH @0
 ```
 
 ## Installing
-You can download pre-compiled binaries for Linux, Windows and Mac from the [releases page](https://github.com/0xZDH/kerbrute/releases/tag/latest). If you want to live on the edge, you can also install with Go:
+This fork doesn't publish pre-compiled releases. Build it yourself with Go (1.18+):
 
 ```
-$ go get github.com/0xZDH/kerbrute
+$ go install github.com/salitress/kerbrute@latest
 ```
 
 With the repository cloned, you can also use the Make file to compile for common architectures:

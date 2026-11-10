@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/0xZDH/kerbrute/util"
+	"github.com/salitress/kerbrute/util"
 
 	"github.com/spf13/cobra"
 )

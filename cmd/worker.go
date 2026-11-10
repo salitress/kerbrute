@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/0xZDH/kerbrute/util"
+	"github.com/salitress/kerbrute/util"
 )
 
 func makeSprayWorker(ctx context.Context, usernames <-chan string, wg *sync.WaitGroup, password string, userAsPass bool) {

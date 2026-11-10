@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/0xZDH/kerbrute/cmd"
-	"github.com/0xZDH/kerbrute/util"
+	"github.com/salitress/kerbrute/cmd"
+	"github.com/salitress/kerbrute/util"
 )
 
 func main() {
