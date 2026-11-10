@@ -109,9 +109,15 @@ func sleepDelay() {
 	if delay <= 0 {
 		return
 	}
+	j := jitter
+	if j < 0 {
+		j = 0
+	} else if j > 100 {
+		j = 100
+	}
 	d := delay
-	if jitter > 0 {
-		spread := delay * jitter / 100
+	if j > 0 {
+		spread := delay * j / 100
 		if spread > 0 {
 			d = delay - spread + rand.Intn(2*spread+1)
 			if d < 0 {
@@ -120,4 +126,20 @@ func sleepDelay() {
 		}
 	}
 	time.Sleep(time.Duration(d) * time.Millisecond)
+}
+
+// lockoutLimitReached reports whether --lockout-threshold has already been
+// used up for username, WITHOUT consuming an attempt. Lets a scan loop with
+// a single fixed target (bruteuser) stop early instead of grinding through
+// the rest of a wordlist, sleeping --delay each time, once nothing more can
+// be learned.
+func lockoutLimitReached(username string) bool {
+	if lockoutThreshold <= 0 {
+		return false
+	}
+	v, ok := attemptCounts.Load(strings.ToLower(username))
+	if !ok {
+		return false
+	}
+	return int(atomic.LoadInt32(v.(*int32))) > lockoutThreshold-1
 }

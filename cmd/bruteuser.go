@@ -72,6 +72,10 @@ Scan:
 		case <-ctx.Done():
 			break Scan
 		default:
+			if lockoutLimitReached(username) {
+				logger.Log.Infof("[!] Reached --lockout-threshold for %s, stopping early instead of grinding through the rest of the wordlist\n", username)
+				break Scan
+			}
 			password = strings.TrimRight(scanner.Text(), "\r\n")
 			sleepDelay()
 			passwordsChan <- password
