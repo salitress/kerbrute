@@ -1,7 +1,7 @@
 TARGET=./dist
 ARCHS=amd64 386 arm64
 GOOS=windows linux darwin
-PACKAGENAME="github.com/0xZDH/kerbrute"
+PACKAGENAME="github.com/salitress/kerbrute"
 
 COMMIT=`git rev-parse --short HEAD`
 DATE=`date +%m/%d/%y`
@@ -54,7 +54,7 @@ mac: ## Make Darwin (Mac) x64 and ARM64 Binaries
 
 clean: ## Delete any binaries
 	@rm -f ${TARGET}/* ; \
-	go clean -i -n github.com/0xZDH/kerbrute ; \
+	go clean -i -n github.com/salitress/kerbrute ; \
 	echo "Done."
 
 all: ## Make Windows, Linux and Mac x86/x64/ARM64 Binaries

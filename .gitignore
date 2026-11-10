@@ -14,4 +14,7 @@
 .vscode
 dist/
 
+# Local build output (built with `go build -o kerbrute .`)
+/kerbrute
+
 .DS_Store

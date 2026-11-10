@@ -9,7 +9,7 @@ project_name: kerbrute
 builds:
   - id: kerbrute
     ldflags:
-      - -X github.com/0xZDH/kerbrute/util.GitCommit={{ .ShortCommit }}
+      - -X github.com/salitress/kerbrute/util.GitCommit={{ .ShortCommit }}
     binary: kerbrute
     main: ./main.go
     env:
